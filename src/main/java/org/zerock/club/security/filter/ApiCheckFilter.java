@@ -5,6 +5,7 @@ import net.minidev.json.JSONObject;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.zerock.club.security.util.JWTUtil;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -18,10 +19,12 @@ public class ApiCheckFilter  extends OncePerRequestFilter {
 
     private AntPathMatcher antPathMatcher;
     private String pattern;
+    private JWTUtil jwtUtil;
 
-    public ApiCheckFilter(String pattern) {
+    public ApiCheckFilter(String pattern, JWTUtil jwtUtil) {
         this.antPathMatcher = new AntPathMatcher();
         this.pattern = pattern;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -54,9 +57,12 @@ public class ApiCheckFilter  extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if(StringUtils.hasText(authHeader)){
-            if(authHeader.equals("12345678")){
-                checkResult = true;
+        if(StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer")){
+            try {
+                String email = jwtUtil.validationAndExtract(authHeader.substring(7));
+                checkResult = email.length() > 0;
+            } catch (Exception e){
+                e.printStackTrace();
             }
         }
         return checkResult;
